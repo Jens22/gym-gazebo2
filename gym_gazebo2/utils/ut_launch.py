@@ -157,8 +157,8 @@ def generateLaunchDescriptionMara(gzclient, realSpeed, multiInstance, port, urdf
 
 def launchReal():
     #TODO: it is hard-coded
-    os.environ["ROS_DOMAIN_ID"] = str(22)
-    os.environ["RMW_IMPLEMENTATION"] = "rmw_opensplice_cpp"
+    os.environ["ROS_DOMAIN_ID"] = str(1)
+    os.environ["RMW_IMPLEMENTATION"] = "rmw_fastrtps_cpp"
     installDir = get_package_prefix('mara_gazebo_plugins')
     launchDesc = LaunchDescription([
         Node(package='hros_cognition_mara_components',
