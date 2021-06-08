@@ -1,6 +1,6 @@
-source /opt/ros/dashing/setup.bash
+source /opt/ros/foxy/setup.bash
 source ~/ros2_mara_ws/install/setup.bash
-source /usr/share/gazebo-9/setup.sh
+source /usr/share/gazebo-11/setup.sh
 export RMW_IMPLEMENTATION=rmw_opensplice_cpp
 export PYTHONPATH=$PYTHONPATH:~/ros2_mara_ws/install/lib/python3/dist-packages
 export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/ros2_mara_ws/install/share

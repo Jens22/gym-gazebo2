@@ -37,3 +37,9 @@ register(
     id='MARARandomTarget-v0',
     entry_point='gym_gazebo2.envs.MARA:MARARandomTargetEnv',
 )
+
+#Turtlebot3
+register(
+    id='Turtlebot3-v0',
+    entry_point='gym_gazebo2.envs.Turtlebot3:Turtlebot3Env',
+)
