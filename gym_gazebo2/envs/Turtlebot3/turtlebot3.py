@@ -52,7 +52,7 @@ class Turtlebot3Env(gym.Env):
         Initialize the Turtlebot3 environemnt
         """
         rclpy.init() #jw TODO init makes problems if I call gym.make out of another ROS node
-        
+        #comment
         # Launch Turtlebot3 in gazebo
         gazeboLaunchFileDir = os.path.join(get_package_share_directory('turtlebot3_gazebo'),'launch')
         launch_desc = LaunchDescription([
