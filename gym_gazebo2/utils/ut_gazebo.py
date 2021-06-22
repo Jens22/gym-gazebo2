@@ -1,8 +1,14 @@
 from gazebo_msgs.srv import SpawnEntity
 import rclpy
+import os
+from ament_index_python.packages import get_package_share_directory
 
-def spawnModel(node, objName, objPath, pose):
-    objFile = open(objPath, mode='r')
+def spawnModel(node, objName, pose):
+    sdf_file_path = os.path.join(
+        get_package_share_directory("turtlebot3_gazebo"), "models",
+        "turtlebot3_burger", "model.sdf")
+    
+    objFile = open(sdf_file_path, mode='r')
     xml = objFile.read()
     objFile.close()
 

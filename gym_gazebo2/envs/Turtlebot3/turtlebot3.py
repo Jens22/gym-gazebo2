@@ -8,11 +8,12 @@ import os
 import psutil
 import signal
 import sys
+import random
 from scipy.stats import skew
 from gym import utils, spaces
-from gym_gazebo2.utils import ut_generic, ut_launch, ut_gazebo, general_utils
+from gym_gazebo2.utils import ut_generic, ut_launch, ut_gazebo #, general_utils
 from gym.utils import seeding
-from gazebo_msgs.srv import SpawnEntity
+from gazebo_msgs.srv import SpawnEntity, DeleteEntity
 import subprocess
 import argparse
 import transforms3d as tf3d
@@ -50,7 +51,8 @@ class Turtlebot3Env(gym.Env):
         """
         Initialize the Turtlebot3 environemnt
         """
-        rclpy.init() #jw TODO init makes problems if I call gym.make out of another ROS node
+        #rclpy.init() #jw TODO init makes problems if I call gym.make out of another ROS node
+        
         # Launch Turtlebot3 in gazebo
         gazeboLaunchFileDir = os.path.join(get_package_share_directory('turtlebot3_gazebo'),'launch')
         launch_desc = LaunchDescription([
@@ -67,7 +69,12 @@ class Turtlebot3Env(gym.Env):
         self.iterator = 0
         self.reset_jnts = True
         self._scan_msg = None
-
+        sdf_file_path = os.path.join(get_package_share_directory("turtlebot3_gazebo"), "models", "turtlebot3_burger", "model.sdf")
+        objFile = open(sdf_file_path, mode='r')
+        self.xml = objFile.read()
+        objFile.close()
+        
+        
         # Subscribe to the appropriate topics, taking into account the particular robot
         qos = QoSProfile(depth=10)
         self._pub_cmd_vel = self.node.create_publisher(Twist, 'cmd_vel', qos)
@@ -76,8 +83,8 @@ class Turtlebot3Env(gym.Env):
         self.reset_sim = self.node.create_client(Empty, '/reset_simulation')
         self.unpause = self.node.create_client(Empty, '/unpause_physics')
         self.pause = self.node.create_client(Empty,'/pause_physics')
-
-
+        self.add_entity = self.node.create_client(SpawnEntity, '/spawn_entity')
+        self.delete_entity = self.node.create_client(DeleteEntity, '/delete_entity')
         self.action_space = spaces.Discrete(13)
         
         len_scan = 24
@@ -87,6 +94,23 @@ class Turtlebot3Env(gym.Env):
         low = np.append(low, [-1*np.inf, -1*np.inf])
                   
         self.observation_space = spaces.Box(low, high)
+        
+        #Spawn turtlebot3
+        while not self.add_entity.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info('service not available, waiting again...')
+        
+        req_spawn = SpawnEntity.Request()
+        req_spawn.name = 'Turtlebot3'
+        req_spawn.xml = self.xml
+        req_spawn.robot_namespace = ''
+        req_spawn.initial_pose.position.x = -1.0
+        req_spawn.initial_pose.position.y = -1.0
+        req_spawn.initial_pose.position.z = 0.01
+        req_spawn.reference_frame = 'world'
+        
+        spawn_future = self.add_entity.call_async(req_spawn)
+        rclpy.spin_until_future_complete(self.node, spawn_future)
+        
         
         # Seed the environment
         self.seed()
@@ -195,6 +219,108 @@ class Turtlebot3Env(gym.Env):
         """
         Reset the agent for a particular experiment condition.
         """
+        start_pose_list = []
+        pose_1 = Pose()
+        pose_1.position.x = -1.0
+        pose_1.position.y = 7.0
+        pose_1.position.z = 0.01
+        pose_1.orientation.x = 0.0
+        pose_1.orientation.y = 0.0
+        pose_1.orientation.z = -0.7071 
+        pose_1.orientation.w = 0.7071
+        start_pose_list.append(pose_1)
+        
+        pose_2 = Pose()
+        pose_2.position.x = -0.5
+        pose_2.position.y = 5.0
+        pose_2.position.z = 0.01
+        pose_2.orientation.x = 0.0
+        pose_2.orientation.y = 0.0
+        pose_2.orientation.z = -0.7071 
+        pose_2.orientation.w = 0.7071 
+        start_pose_list.append(pose_2)
+        
+        pose_3 = Pose()
+        pose_3.position.x = -1.0
+        pose_3.position.y = 4.0
+        pose_3.position.z = 0.01
+        pose_3.orientation.x = 0.0
+        pose_3.orientation.y = 0.0
+        pose_3.orientation.z = 0.7071 
+        pose_3.orientation.w = 0.7071 
+        start_pose_list.append(pose_3)
+        
+        pose_4 = Pose()
+        pose_4.position.x = -1.5
+        pose_4.position.y = -1.5
+        pose_4.position.z = 0.01
+        pose_4.orientation.x = 0.0
+        pose_4.orientation.y = 0.0
+        pose_4.orientation.z = 0.7071 
+        pose_4.orientation.w = 0.7071 
+        start_pose_list.append(pose_4)
+        
+        pose_5 = Pose()
+        pose_5.position.x = 2.0
+        pose_5.position.y = -1.8
+        pose_5.position.z = 0.01
+        pose_5.orientation.x = 0.0
+        pose_5.orientation.y = 0.0
+        pose_5.orientation.z = 0.7071 
+        pose_5.orientation.w = 0.7071 
+        start_pose_list.append(pose_5)
+        
+        pose_6 = Pose()
+        pose_6.position.x = 6.0
+        pose_6.position.y = 7.0
+        pose_6.position.z = 0.01
+        pose_6.orientation.x = 0.0
+        pose_6.orientation.y = 0.0
+        pose_6.orientation.z = 0.0
+        pose_6.orientation.w = 1.0
+        start_pose_list.append(pose_6)
+        
+        pose_7 = Pose()
+        pose_7.position.x = 2.0 
+        pose_7.position.y = 7.5
+        pose_7.position.z = 0.01
+        pose_7.orientation.x = 0.0
+        pose_7.orientation.y = 0.0
+        pose_7.orientation.z = 1.0
+        pose_7.orientation.w = 0.0
+        start_pose_list.append(pose_7)
+        
+        pose_8 = Pose()
+        pose_8.position.x = 1.0
+        pose_8.position.y = -0.5
+        pose_8.position.z = 0.01
+        pose_8.orientation.x = 0.0
+        pose_8.orientation.y = 0.0
+        pose_8.orientation.z = 1.0
+        pose_8.orientation.w = 0.0
+        start_pose_list.append(pose_8)
+        
+        pose_9 = Pose()
+        pose_9.position.x =  5.0
+        pose_9.position.y = -1.5
+        pose_9.position.z = 0.01
+        pose_9.orientation.x = 0.0
+        pose_9.orientation.y = 0.0
+        pose_9.orientation.z = 0.0
+        pose_9.orientation.w = 1.0
+        start_pose_list.append(pose_9)
+        
+        pose_10 = Pose()
+        pose_10.position.x = 2.0
+        pose_10.position.y = -0.5
+        pose_10.position.z = 0.01
+        pose_10.orientation.x = 0.0
+        pose_10.orientation.y = 0.0
+        pose_10.orientation.z = -0.7071 
+        pose_10.orientation.w = 0.7071 
+        start_pose_list.append(pose_10)
+        
+        
         while not self.unpause.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info('/unpause simulation service not available, waiting again...')
 
@@ -202,15 +328,39 @@ class Turtlebot3Env(gym.Env):
         rclpy.spin_until_future_complete(self.node, unpause)
         
         self.iterator = 0
+        index = random.randrange(0, 10, 1)
+        req_spawn = SpawnEntity.Request()
+        req_spawn.name = 'Turtlebot3'
+        req_spawn.xml = self.xml
+        req_spawn.robot_namespace = ''
+        req_spawn.initial_pose = start_pose_list[index]
+        req_spawn.reference_frame = 'world'
 
         if self.reset_jnts is True:
             # reset simulation
-            while not self.reset_sim.wait_for_service(timeout_sec=1.0):
+            while not self.delete_entity.wait_for_service(timeout_sec=1.0):
                 self.node.get_logger().info('/reset_simulation service not available, waiting again...')
+            req_delete = DeleteEntity.Request()
+            req_delete.name = 'Turtlebot3'
+            
+            delete_future = self.delete_entity.call_async(req_delete)
+            rclpy.spin_until_future_complete(self.node, delete_future)
+            respone = delete_future.result()
+            print (respone.success)
+            if respone.success == True:
+                '''
+                while not self.reset_sim.wait_for_service(timeout_sec=1.0):
+                    self.node.get_logger().info('/reset_simulation service not available, waiting again...')
 
-            reset_future = self.reset_sim.call_async(Empty.Request())
-            rclpy.spin_until_future_complete(self.node, reset_future)
-
+                reset_future = self.reset_sim.call_async(Empty.Request())
+                rclpy.spin_until_future_complete(self.node, reset_future)
+                '''
+            
+                while not self.add_entity.wait_for_service(timeout_sec=1.0):
+                    self.node.get_logger().info('service not available, waiting again...')
+                
+                spawn_future = self.add_entity.call_async(req_spawn)
+                rclpy.spin_until_future_complete(self.node, spawn_future)
         # Take an observation
         obs, done = self.take_observation()
 
