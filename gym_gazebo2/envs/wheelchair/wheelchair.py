@@ -21,7 +21,6 @@ import transforms3d as tf3d
 # ROS 2
 import rclpy
 
-
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
@@ -41,7 +40,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 
-class Turtlebot3Env(gym.Env):
+class WheelchairEnv(gym.Env):
     """
     TODO. Define the environment.
     """
@@ -53,10 +52,10 @@ class Turtlebot3Env(gym.Env):
         """
         rclpy.init() #jw TODO init makes problems if I call gym.make out of another ROS node
         # Launch Turtlebot3 in gazebo
-        gazeboLaunchFileDir = os.path.join(get_package_share_directory('turtlebot3_gazebo'),'launch')
+        gazeboLaunchFileDir = os.path.join(get_package_share_directory('wheelchair_gazebo'),'launch')
         launch_desc = LaunchDescription([
             IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([gazeboLaunchFileDir,'/turtlebot3_4OG.launch.py']))])
+                PythonLaunchDescriptionSource([gazeboLaunchFileDir,'/wheelchair_gazebo.launch.py']))])
         self.launch_subp = ut_launch.startLaunchServiceProcess(launch_desc)
 
         # Create the node after the new ROS_DOMAIN_ID is set in generate_launch_description()
@@ -69,7 +68,7 @@ class Turtlebot3Env(gym.Env):
         self.reset_jnts = True
         self._scan_msg = None
         self.old_index = 0
-        sdf_file_path = os.path.join(get_package_share_directory("turtlebot3_gazebo"), "models", "turtlebot3_burger", "model.sdf")
+        sdf_file_path = os.path.join(get_package_share_directory("wheelchair_gazebo"), "models", "wheelchair", "model.sdf")
         objFile = open(sdf_file_path, mode='r')
         self.xml = objFile.read()
         objFile.close()
@@ -87,7 +86,7 @@ class Turtlebot3Env(gym.Env):
         self.set_entity_state = self.node.create_client(SetEntityState, '/set_entity_state')
         self.action_space = spaces.Discrete(13)
         
-        len_scan = 24
+        len_scan = 818
         high = np.inf*np.ones(len_scan)
         high = np.append(high, [np.inf, np.inf])
         low = 0*np.ones(len_scan)
@@ -100,7 +99,7 @@ class Turtlebot3Env(gym.Env):
             self.node.get_logger().info('service not available, waiting again...')
         
         req_spawn = SpawnEntity.Request()
-        req_spawn.name = 'Turtlebot3'
+        req_spawn.name = 'Wheelchair'
         req_spawn.xml = self.xml
         req_spawn.robot_namespace = ''
         req_spawn.initial_pose.position.x = -1.0
@@ -152,10 +151,10 @@ class Turtlebot3Env(gym.Env):
         done = False
         
         for i, item in enumerate(lastScans):
-            if lastScans[i] <= 0.2:
+            if lastScans[i] <= 0.6:
                 done = True
             elif lastScans[i] == float('inf') or np.isinf(lastScans[i]):
-                lastScans[i] = 4.0
+                lastScans[i] = 10.0
                 
         #Set observation to None after it has been read.
         self._odom_msg = None
@@ -188,8 +187,8 @@ class Turtlebot3Env(gym.Env):
         self.iterator+=1
         
         # Execute "action"
-        action_list = [-0.3,-0.25,-0.2,-0.15,-0.1,-0.05,0.0,0.05,0.1,0.15,0.2,0.25,0.3]
-        V_CONST = 0.3
+        action_list = [-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6]
+        V_CONST = 0.5
         vel_cmd = Twist()
         vel_cmd.linear.x = V_CONST
         vel_cmd.angular.z = action_list[action]
@@ -222,103 +221,43 @@ class Turtlebot3Env(gym.Env):
         start_pose_list = []
         pose_1 = Pose()
         pose_1.position.x = -1.0
-        pose_1.position.y = 7.0
+        pose_1.position.y = -1.0
         pose_1.position.z = 0.01
         pose_1.orientation.x = 0.0
         pose_1.orientation.y = 0.0
-        pose_1.orientation.z = -0.7071 
-        pose_1.orientation.w = 0.7071
+        pose_1.orientation.z = 0.0
+        pose_1.orientation.w = 1.0
         start_pose_list.append(pose_1)
         
         pose_2 = Pose()
-        pose_2.position.x = -0.5
-        pose_2.position.y = 5.0
+        pose_2.position.x = -1.0
+        pose_2.position.y = -1.0
         pose_2.position.z = 0.01
         pose_2.orientation.x = 0.0
         pose_2.orientation.y = 0.0
-        pose_2.orientation.z = -0.7071 
+        pose_2.orientation.z = 0.7071 
         pose_2.orientation.w = 0.7071 
         start_pose_list.append(pose_2)
         
         pose_3 = Pose()
-        pose_3.position.x = -1.0
-        pose_3.position.y = 4.0
+        pose_3.position.x = 3.0
+        pose_3.position.y = -1.5
         pose_3.position.z = 0.01
         pose_3.orientation.x = 0.0
         pose_3.orientation.y = 0.0
-        pose_3.orientation.z = 0.7071 
-        pose_3.orientation.w = 0.7071 
+        pose_3.orientation.z = 0.0
+        pose_3.orientation.w = 1.0 
         start_pose_list.append(pose_3)
         
         pose_4 = Pose()
-        pose_4.position.x = -1.5
-        pose_4.position.y = -1.5
+        pose_4.position.x = 2.0
+        pose_4.position.y = 7.5
         pose_4.position.z = 0.01
         pose_4.orientation.x = 0.0
         pose_4.orientation.y = 0.0
-        pose_4.orientation.z = 0.7071 
-        pose_4.orientation.w = 0.7071 
+        pose_4.orientation.z = 0.0
+        pose_4.orientation.w = 1.0 
         start_pose_list.append(pose_4)
-        
-        pose_5 = Pose()
-        pose_5.position.x = 2.0
-        pose_5.position.y = -1.8
-        pose_5.position.z = 0.01
-        pose_5.orientation.x = 0.0
-        pose_5.orientation.y = 0.0
-        pose_5.orientation.z = 0.7071 
-        pose_5.orientation.w = 0.7071 
-        start_pose_list.append(pose_5)
-        
-        pose_6 = Pose()
-        pose_6.position.x = 6.0
-        pose_6.position.y = 7.0
-        pose_6.position.z = 0.01
-        pose_6.orientation.x = 0.0
-        pose_6.orientation.y = 0.0
-        pose_6.orientation.z = 0.0
-        pose_6.orientation.w = 1.0
-        start_pose_list.append(pose_6)
-        
-        pose_7 = Pose()
-        pose_7.position.x = 2.0 
-        pose_7.position.y = 7.5
-        pose_7.position.z = 0.01
-        pose_7.orientation.x = 0.0
-        pose_7.orientation.y = 0.0
-        pose_7.orientation.z = 1.0
-        pose_7.orientation.w = 0.0
-        start_pose_list.append(pose_7)
-        
-        pose_8 = Pose()
-        pose_8.position.x = 1.0
-        pose_8.position.y = -0.5
-        pose_8.position.z = 0.01
-        pose_8.orientation.x = 0.0
-        pose_8.orientation.y = 0.0
-        pose_8.orientation.z = 1.0
-        pose_8.orientation.w = 0.0
-        start_pose_list.append(pose_8)
-        
-        pose_9 = Pose()
-        pose_9.position.x =  5.0
-        pose_9.position.y = -1.5
-        pose_9.position.z = 0.01
-        pose_9.orientation.x = 0.0
-        pose_9.orientation.y = 0.0
-        pose_9.orientation.z = 0.0
-        pose_9.orientation.w = 1.0
-        start_pose_list.append(pose_9)
-        
-        pose_10 = Pose()
-        pose_10.position.x = 2.0
-        pose_10.position.y = -0.5
-        pose_10.position.z = 0.01
-        pose_10.orientation.x = 0.0
-        pose_10.orientation.y = 0.0
-        pose_10.orientation.z = -0.7071 
-        pose_10.orientation.w = 0.7071 
-        start_pose_list.append(pose_10)
         
         zero_twist = Twist()
         zero_twist.linear.x = 0.0
@@ -336,11 +275,11 @@ class Turtlebot3Env(gym.Env):
         rclpy.spin_until_future_complete(self.node, unpause)
         
         self.iterator = 0
-        index = random.randrange(0, 10, 1)
+        index = random.randrange(0, 4, 1)
         while index == self.old_index:
-            index = random.randrange(0, 10, 1)
+            index = random.randrange(0, 4, 1)
         req_set = SetEntityState.Request()
-        req_set.state.name = 'Turtlebot3'
+        req_set.state.name = 'Wheelchair'
         req_set.state.pose = start_pose_list[index]
         req_set.state.twist = zero_twist
         req_set.state.reference_frame = 'world'

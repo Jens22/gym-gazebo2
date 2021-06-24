@@ -43,3 +43,9 @@ register(
     id='Turtlebot3-v0',
     entry_point='gym_gazebo2.envs.Turtlebot3:Turtlebot3Env',
 )
+
+#Wheelchair
+register(
+    id='Wheelchair-v0',
+    entry_point='gym_gazebo2.envs.wheelchair:WheelchairEnv',
+)
