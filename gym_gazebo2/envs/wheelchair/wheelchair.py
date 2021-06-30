@@ -63,7 +63,7 @@ class WheelchairEnv(gym.Env):
 
         # class variables
         self._odom_msg = None
-        self.max_episode_steps = 1024 #default value, can be updated from baselines
+        self.max_episode_steps = 4096 #default value, can be updated from baselines
         self.iterator = 0
         self.reset_jnts = True
         self._scan_msg = None
@@ -84,7 +84,7 @@ class WheelchairEnv(gym.Env):
         self.pause = self.node.create_client(Empty,'/pause_physics')
         self.add_entity = self.node.create_client(SpawnEntity, '/spawn_entity')
         self.set_entity_state = self.node.create_client(SetEntityState, '/set_entity_state')
-        self.action_space = spaces.Discrete(13)
+        self.action_space = spaces.Discrete(17)
         
         len_scan = 818
         high = np.inf*np.ones(len_scan)
@@ -150,12 +150,20 @@ class WheelchairEnv(gym.Env):
         lastScans = scan_message.ranges
         done = False
         
+        angle_min = scan_message.angle_min  # start angle of the scan [rad]
+        angle_max = scan_message.angle_max  # end angle of the scan [rad]
+        angle_increment = scan_message.angle_increment  # angular distance between measurements [rad]
+        angles = np.arange(angle_min, angle_max, angle_increment)
+        ellipse_a = 0.8
+        ellipse_b = 0.45
+        ellipse_ranges = ellipse_a * ellipse_b / np.sqrt(np.square(ellipse_b * np.cos(angles)) + np.square(ellipse_a * np.sin(angles)))        
+        
         for i, item in enumerate(lastScans):
-            if lastScans[i] <= 0.6:
-                done = True
-            elif lastScans[i] == float('inf') or np.isinf(lastScans[i]):
+            if lastScans[i] == float('inf') or np.isinf(lastScans[i]):
                 lastScans[i] = 10.0
-                
+            if lastScans[i] <= ellipse_ranges[i]:
+                done = True
+
         #Set observation to None after it has been read.
         self._odom_msg = None
         self._scan_msg = None
@@ -187,7 +195,7 @@ class WheelchairEnv(gym.Env):
         self.iterator+=1
         
         # Execute "action"
-        action_list = [-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,0.0,0.1,0.2,0.3,0.4,0.5,0.6]
+        action_list = [-0.4,-0.35,-0.3,-0.25,-0.2,-0.15,-0.1,-0.05,0.0, 0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4]
         V_CONST = 0.5
         vel_cmd = Twist()
         vel_cmd.linear.x = V_CONST
@@ -280,7 +288,7 @@ class WheelchairEnv(gym.Env):
             index = random.randrange(0, 4, 1)
         req_set = SetEntityState.Request()
         req_set.state.name = 'Wheelchair'
-        req_set.state.pose = start_pose_list[index]
+        req_set.state.pose = start_pose_list[1] #index for diffrent starting positions
         req_set.state.twist = zero_twist
         req_set.state.reference_frame = 'world'
 
