@@ -26,7 +26,7 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 # from gazebo_msgs.srv import SetEntityState, DeleteEntity
 from gazebo_msgs.msg import ContactState, ModelState, EntityState#, GetModelList
-from std_msgs.msg import String, Int32
+from std_msgs.msg import String
 from std_srvs.srv import Empty
 from geometry_msgs.msg import Pose, Twist
 from sensor_msgs.msg import LaserScan
@@ -77,8 +77,6 @@ class WheelchairEnv(gym.Env):
         # Subscribe to the appropriate topics, taking into account the particular robot
         qos = QoSProfile(depth=10)
         self._pub_cmd_vel = self.node.create_publisher(Twist, 'cmd_vel', qos)
-        self._pub_action = self.node.create_publisher(Int32,'env_action',qos)
-        self._pub_iterator = self.node.create_publisher(Int32,'env_iterator',qos)
         self._sub_odom = self.node.create_subscription(Odometry, 'odom', self.odom_callback, qos)
         self._sub_scan = self.node.create_subscription(LaserScan, 'scan', self.scan_callback, qos)
         self.reset_sim = self.node.create_client(Empty, '/reset_simulation')
@@ -88,7 +86,7 @@ class WheelchairEnv(gym.Env):
         self.set_entity_state = self.node.create_client(SetEntityState, '/set_entity_state')
         self.action_space = spaces.Discrete(17)
         
-        len_scan = 818
+        len_scan = 100
         high = np.inf*np.ones(len_scan)
         high = np.append(high, [np.inf, np.inf])
         low = 0*np.ones(len_scan)
@@ -221,14 +219,6 @@ class WheelchairEnv(gym.Env):
 
         pause = self.pause.call_async(Empty.Request())
         rclpy.spin_until_future_complete(self.node, pause)
-        
-        env_action = Int32()
-        env_action.data = int(action)
-        self._pub_action.publish(env_action)
-        env_iterator = Int32()
-        env_iterator.data = self.iterator
-        self._pub_iterator.publish(env_iterator)
-        
         # Return the corresponding observations, rewards, etc.
         return obs, reward, done, info
 
@@ -238,7 +228,6 @@ class WheelchairEnv(gym.Env):
         """
         start_pose_list = []
         
-        #start Pose for learning with only one starting position
         pose_0 = Pose()
         pose_0.position.x = -1.0
         pose_0.position.y = -1.0
@@ -249,7 +238,6 @@ class WheelchairEnv(gym.Env):
         pose_0.orientation.w = 0.7071 
         start_pose_list.append(pose_0)
         
-        # 1-4 start pose for learning in one direction
         pose_1 = Pose()
         pose_1.position.x = -1.5
         pose_1.position.y = 3.0
@@ -267,7 +255,7 @@ class WheelchairEnv(gym.Env):
         pose_2.orientation.x = 0.0
         pose_2.orientation.y = 0.0
         pose_2.orientation.z = 0.0 
-        pose_2.orientation.w = 1.0 
+        pose_2.orientation.w = 0.1 
         start_pose_list.append(pose_2)
         
         pose_3 = Pose()
@@ -290,8 +278,6 @@ class WheelchairEnv(gym.Env):
         pose_4.orientation.w = 0.0 
         start_pose_list.append(pose_4)
         
-        # 5-8 add second direction
-        # 1&5 two direction, each one start position
         pose_5 = Pose()
         pose_5.position.x = -1.5
         pose_5.position.y = 3.0
@@ -301,36 +287,6 @@ class WheelchairEnv(gym.Env):
         pose_5.orientation.z = -0.7071
         pose_5.orientation.w = 0.7071 
         start_pose_list.append(pose_5)
-        
-        pose_6 = Pose()
-        pose_6.position.x = 4.0
-        pose_6.position.y = 7.5
-        pose_6.position.z = 0.01
-        pose_6.orientation.x = 0.0
-        pose_6.orientation.y = 0.0
-        pose_6.orientation.z = 1.0 
-        pose_6.orientation.w = 0.0 
-        start_pose_list.append(pose_6)
-        
-        pose_7 = Pose()
-        pose_7.position.x = 24.0
-        pose_7.position.y = 3.0
-        pose_7.position.z = 0.01
-        pose_7.orientation.x = 0.0
-        pose_7.orientation.y = 0.0
-        pose_7.orientation.z = 0.7071
-        pose_7.orientation.w = 0.7071
-        start_pose_list.append(pose_7)
-        
-        pose_8 = Pose()
-        pose_8.position.x = 21.5
-        pose_8.position.y = -1.25
-        pose_8.position.z = 0.01
-        pose_8.orientation.x = 0.0
-        pose_8.orientation.y = 0.0
-        pose_8.orientation.z = 0.0
-        pose_8.orientation.w = 1.0 
-        start_pose_list.append(pose_8)
         
         zero_twist = Twist()
         zero_twist.linear.x = 0.0
@@ -353,18 +309,13 @@ class WheelchairEnv(gym.Env):
         self._pub_cmd_vel.publish(vel_cmd)
         
         self.iterator = 0
-        
-        index = random.randrange(1, 9, 1)
-        while index == self.old_index:
-            index = random.randrange(1, 9, 1)
-        '''
+        #index = random.randrange(1, 5, 1)
+        #while index == self.old_index:
+        #    index = random.randrange(1, 5, 1)
         if self.old_index == 1:
             index = 5
         else:
             index = 1
-        '''
-        index = 0
-           
         req_set = SetEntityState.Request()
         req_set.state.name = 'Wheelchair'
         req_set.state.pose = start_pose_list[index] #index for diffrent starting positions
